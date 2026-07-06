@@ -247,6 +247,10 @@
         
         .fav-star { color: #ffeb3b; margin-left: 5px; }
 
+        /* Penempatan Posisi Kolom Grid Tombol Baru */
+        .btn-nav-back { grid-column: 1; }
+        .btn-nav-next { grid-column: 2; }
+
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
         audio { display: none; }
@@ -323,6 +327,11 @@
     <div class="btn-grid">
         <button class="btn" onclick="prevFav()">Fav -</button>
         <button class="btn" onclick="nextFav()">Fav +</button>
+        
+        <!-- Tombol Tambahan: Ditempatkan di bawah Fav- dan Fav+ -->
+        <button class="btn btn-nav-back" onclick="prevChannel()">Back</button>
+        <button class="btn btn-nav-next" onclick="nextChannel()">Next</button>
+
         <button class="btn" onclick="adjustVol(-0.1)">Volume -</button>
         <button class="btn" onclick="adjustVol(0.1)">Volume +</button>
         <button class="btn btn-fav-toggle" id="favToggleBtn" onclick="toggleFavorite()">Fav</button>
@@ -490,6 +499,9 @@
         });
         const activeItem = document.getElementById(`item-${currentIndex}`);
         if(activeItem) activeItem.classList.add('active');
+        
+        // Memastikan scrollbar pada playlist box otomatis mengikuti channel aktif
+        if(activeItem) activeItem.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }
 
     function loadChannel(index) {
@@ -498,6 +510,7 @@
         document.querySelectorAll('.playlist-item').forEach(el => el.classList.remove('active'));
         const activeItem = document.getElementById(`item-${index}`);
         if(activeItem) activeItem.classList.add('active');
+        if(activeItem) activeItem.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         
         document.getElementById('channelName').textContent = "TUNING...";
         source.src = ch.url;
@@ -509,6 +522,21 @@
             document.getElementById('channelName').textContent = "NO SIGNAL"; 
         });
         updateFavButton();
+    }
+
+    // FUNGSI BARU: Pindah ke channel reguler sebelumnya (BACK)
+    function prevChannel() {
+        let newIndex = currentIndex - 1;
+        if (newIndex < 0) {
+            newIndex = radioChannels.length - 1;
+        }
+        loadChannel(newIndex);
+    }
+
+    // FUNGSI BARU: Pindah ke channel reguler berikutnya (NEXT)
+    function nextChannel() {
+        let newIndex = (currentIndex + 1) % radioChannels.length;
+        loadChannel(newIndex);
     }
 
     function nextFav() {
