@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DAMAR RADIO PLAYER</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@900&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 10px;
+        }
+
+        .radio-unit {
+            background: #2c2c2c;
+            width: 100%;
+            max-width: 400px;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.7);
+            border: 2px solid #444;
+        }
+
+        .branding {
+            font-family: 'Roboto', sans-serif;
+            font-size: 16px;
+            color: #888;
+            margin-bottom: 12px;
+            text-align: center;
+            letter-spacing: 3px;
+            font-weight: bold;
+        }
+
+        .lcd-container {
+            background: #000;
+            padding: 8px;
+            border-radius: 8px;
+            border: 6px solid #111;
+            margin-bottom: 20px;
+        }
+
+        .lcd-screen {
+            background: #5a8fb3; 
+            color: #000000;
+            height: 170px;
+            border-radius: 3px;
+            padding: 10px;
+            position: relative; /* Penting untuk overlay */
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.4);
+            transition: background 0.3s ease;
+        }
+
+        /* PERBAIKAN: Volume Overlay Menutup Seluruh LCD */
+        #volumeOverlay {
+            position: absolute;
+            top: 0; left: 0; 
+            width: 100%; height: 100%;
+            background: inherit; /* Mengikuti warna tombol Lamp */
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100; /* Di atas segalanya */
+        }
+
+        .lcd-header {
+            display: flex;
+            justify-content: space-between;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #000;
+        }
+
+        .signal-bars {
+            display: flex;
+            align-items: flex-end;
+            gap: 4px;
+        }
+
+        .bar {
+            width: 5px;
+            background-color: #000;
+            opacity: 0.1;
+            height: var(--h);
+            border-radius: 1px;
+        }
+
+        .bar.active { opacity: 1; }
+
+        .content-area {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .vol-bar-bg {
+            width: 70%;
+            height: 18px;
+            border: 2px solid #000;
+            margin-top: 10px;
+            position: relative;
+        }
+
+        #vol-bar-fill {
+            height: 100%;
+            background: #000;
+            width: 50%;
+        }
+
+        .channel-info {
+            text-align: center;
+            color: #000;
+        }
+
+        #channelName {
+            font-family: 'Roboto', sans-serif;
+            font-size: 26px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        #statusDisplay { font-size: 10px; font-family: 'Roboto Mono'; margin-top: 5px; font-weight: bold;}
+
+        /* TICKER SYSTEM */
+        .tickers-area {
+            border-top: 2px solid rgba(0,0,0,0.2);
+            padding-top: 6px;
+            margin-top: 5px;
+        }
+
+        .ticker-wrap {
+            width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+            font-size: 11px;
+            font-weight: bold;
+            margin-bottom: 4px;
+            display: flex;
+        }
+
+        .quake-container {
+            background: #000;
+            border-radius: 3px;
+            padding: 2px 0;
+            overflow: hidden;
+            display: flex;
+        }
+
+        .quake-mover {
+            display: inline-flex;
+            animation: scroll-seamless 10s linear infinite;
+        }
+
+        .quake-item {
+            color: #5a8fb3;
+            padding-right: 100px;
+            text-transform: uppercase;
+        }
+
+        .news-mover {
+            display: inline-flex;
+            animation: scroll-seamless 40s linear infinite;
+        }
+
+        .news-item {
+            color: #000;
+            padding-right: 80px;
+        }
+
+        @keyframes scroll-seamless {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        /* CONTROLS */
+        .btn-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background: linear-gradient(#4a4a4a, #2b2b2b);
+            border: 1px solid #111;
+            color: #fff;
+            padding: 14px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 3px 0 #000;
+            text-transform: uppercase;
+            font-size: 12px;
+        }
+
+        .btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #000; }
+        
+        .btn-fav-toggle {
+            background: linear-gradient(#634a4a, #3d2b2b);
+        }
+        .is-favourited {
+            color: #ffeb3b;
+            border-color: #ffeb3b;
+        }
+
+        .playlist-box {
+            background: #111;
+            border-radius: 10px;
+            max-height: 150px;
+            overflow-y: auto;
+            border: 2px solid #222;
+        }
+
+        .playlist-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid #1a1a1a;
+            cursor: pointer;
+            font-size: 13px;
+            color: #888;
+            text-align: left;
+            width: 100%;
+            background: none;
+            border: none;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .playlist-item.active { 
+            color: #fff; 
+            border-left: 5px solid #fff;
+            background: #1a1a1a;
+            font-weight: bold;
+        }
+        
+        .fav-star { color: #ffeb3b; margin-left: 5px; }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        audio { display: none; }
+
+        #cookieBanner {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background: #333;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            z-index: 1000;
+            display: none;
+            font-size: 12px;
+            border-top: 2px solid #5a8fb3;
+        }
+    </style>
+</head>
+<body>
+
+<div id="cookieBanner">
+    Kami menggunakan cookie/local storage untuk favorit Anda. 
+    <button class="btn" style="padding: 5px 15px; margin-left:10px" onclick="acceptCookies()">Setuju</button>
+</div>
+
+<div class="radio-unit">
+    <div class="branding">DAMAR STREAMING RECEIVER</div>
+
+    <div class="lcd-container">
+        <div class="lcd-screen" id="virtualScreen">
+            <div id="volumeOverlay">
+                <div style="font-family: 'Roboto Mono'; font-weight: bold; font-size: 18px;">VOLUME</div>
+                <div class="vol-bar-bg">
+                    <div id="vol-bar-fill"></div>
+                </div>
+                <div id="volPercent" style="font-family: 'Roboto Mono'; font-size: 14px; margin-top: 8px;">50%</div>
+            </div>
+
+            <div class="lcd-header">
+                <div id="timeDisplay">00:00 WIB</div>
+                <div class="signal-bars" id="signalBars">
+                    <div class="bar" style="--h: 6px;"></div>
+                    <div class="bar" style="--h: 9px;"></div>
+                    <div class="bar" style="--h: 12px;"></div>
+                    <div class="bar" style="--h: 15px;"></div>
+                    <div class="bar" style="--h: 18px;"></div>
+                </div>
+            </div>
+
+            <div class="content-area">
+                <div class="channel-info" id="mainChannelInfo">
+                    <div id="channelName">READY</div>
+                    <div id="statusDisplay">BUFFER: 0.0s</div>
+                </div>
+            </div>
+
+            <div class="tickers-area">
+                <div class="ticker-wrap quake-container">
+                    <div class="quake-mover" id="quakeMover">
+                        <span class="quake-item" id="quakeContent">Sinkronisasi BMKG...</span>
+                        <span class="quake-item" id="quakeContent2">Sinkronisasi BMKG...</span>
+                    </div>
+                </div>
+                <div class="ticker-wrap">
+                    <div class="news-mover" id="newsMover">
+                        <span class="news-item" id="newsContent">Memuat berita Google News...</span>
+                        <span class="news-item" id="newsContent2">Memuat berita Google News...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="btn-grid">
+        <button class="btn" onclick="prevFav()">Fav -</button>
+        <button class="btn" onclick="nextFav()">Fav +</button>
+        <button class="btn" onclick="adjustVol(-0.1)">Volume -</button>
+        <button class="btn" onclick="adjustVol(0.1)">Volume +</button>
+        <button class="btn btn-fav-toggle" id="favToggleBtn" onclick="toggleFavorite()">Fav</button>
+        <button class="btn" onclick="toggleLamp()">Lamp</button>
+    </div>
+
+    <div class="playlist-box" id="playlist"></div>
+</div>
+
+<audio id="radioPlayer"><source id="audioSource" src=""></audio>
+
+<script>
+    const radioChannels = [
+        { name: "ADARADIO HD", url: "https://adaradio.kradionews.com/listen/adaradio/stream" },
+        { name: "ANDIKA HD", url: "https://r5.siar.us:1057/andikafm" },
+        { name: "ARDAN", url: "https://stream.rcs.revma.com/ugpyzu9n5k3vv" },
+        { name: "B RADIO", url: "https://stream.rcs.revma.com/9yp8b9pd6k3vv" },
+        { name: "BEAT HD", url: "https://stream.beatradioid.com:8000/stream" },
+        { name: "BENS HD", url: "https://streaming.bensradio.com:8522/stream" },
+        { name: "CAH AYU", url: "https://c4.siar.us:8099/live" },
+        { name: "CAKRA", url: "https://n06.rcs.revma.com/chuzgcqd6k3vv" },
+        { name: "CITY GUIDE HD", url: "https://cityguide911fm.com/radio/audio.mp3" },
+        { name: "COSMOPOLITAN HD", url: "https://stream.radiojar.com/u7d8heq3bnzuv" },
+        { name: "DAHLIA HD", url: "https://svara-stream.radioddns.net/bandung_dahliafm" },
+        { name: "DELTA", url: "https://s1.cloudmu.id/listen/delta_fm/stream" },
+        { name: "DJFM HD", url: "https://svara-stream.radioddns.net/surabaya_djfm_" },
+        { name: "DREAMERS", url: "https://live.dreamers.id:8443/live" },
+        { name: "ELFARA HD", url: "https://c4.siar.us:8123/live" },
+        { name: "ELGANGGA", url: "https://b.alhastream.com:5140/radio" },
+        { name: "ELSHINTA", url: "https://stream-ssl.arenastreaming.com:8000/jakarta" },
+        { name: "ERTE", url: "https://i.klikhost.com/9194/;" },
+        { name: "GEMA MERDEKA", url: "https://radio.gemamedia.id/gema" },
+        { name: "GEN", url: "https://wz.mari.co.id:1936/noice_genfm/genfm/playlist.m3u8" },
+        { name: "GERONIMO HD", url: "https://ig.idstreamer.com:8090//live" },
+        { name: "GOLDEN HITS", url: "https://i.klikhost.com/9134/stream" },
+        { name: "HOT", url: "https://wz.mari.co.id:1936/web_hotfm/hotfm/playlist.m3u8" },
+        { name: "ISTANA", url: "https://ssg.streamingmurah.com:8150/system/player.js" },
+        { name: "ISTARA", url: "https://live.radioistara.com/listen/radioistara/radioistara" },
+        { name: "I SWARA HD", url: "https://n0a.radiojar.com/4ywdgup3bnzuv" },
+        { name: "JAK", url: "https://wz.mari.co.id:1936/web_jakfm/jakfm/playlist.m3u8" },
+        { name: "JIZ", url: "https://pu.klikhost.com/proxy/jizfm/stream" },
+        { name: "JRENG", url: "https://secure.streaming.id:8888/radiojreng.aac" },
+        { name: "K RADIO HD", url: "https://live.kradionews.com/listen/kradio/stream" },
+        { name: "KANAL BEA CUKAI", url: "https://stream01-ssl.arenastreaming.com:8057/stream" },
+        { name: "KARMILA HD", url: "https://r8.siar.us:8030/karmilafm" },
+        { name: "KBR HD", url: "https://i.klikhost.com/8056/kbr" },
+        { name: "KIJANG KENCANA", url: "https://a3.alhastream.com:1230/kijangkencana" },
+        { name: "KISI HD", url: "https://live.kisifm.com/listen/kisifm/kisifm" },
+        { name: "KLCBS HD", url: "https://streaming.klcbsofficial.com/listen/klcbs/klcbs" },
+        { name: "LOKER MUSIK", url: "https://stream.lokermusik.com/listen/lokermusik/lokermusik" },
+        { name: "MEGASWARA", url: "https://server.adyadigitalteknologi.com:8010/stream/1/" },
+        { name: "METTA", url: "https://srv1.streamcast.my.id/listen/metta_solo_fm/radio.mp3" },
+        { name: "MFM HD", url: "https://mfm.isowae.com:8443/studio.mp3" },
+        { name: "MGT", url: "https://s1.gntr.net/listen/mgtradio/mgtradio" },
+        { name: "MNC TRIJAYA", url: "https://cast.tunzilla.com/http://202.147.199.101:8000/;" },
+        { name: "MTB", url: "https://103.123.98.58//listen/1027_mtb_fm_surabaya/radio.mp3" },
+        { name: "NINETYSIX", url: "https://c4.siar.us:8950/stream" },
+        { name: "PARAMUDA", url: "https://i.klikhost.com/8332/;" },
+        { name: "PINGUIN", url: "https://live.radiopinguinfm.com:8350/;stream.mp3" },
+        { name: "PRAMBORS", url: "https://s2.cloudmu.id/listen/prambors/radio.aac" },
+        { name: "PTPN SOLO", url: "https://ssg.streamingmurah.com:8040/stream/1/" },
+        { name: "RAMA", url: "https://i.klikhost.com/8330/;" },
+        { name: "RAS", url: "https://i.klikhost.com/9006/stream" },
+        { name: "RASIKA", url: "https://svara-stream.radioddns.net/rasikafm_stereo" },
+        { name: "RASIL", url: "https://ssg.streamingmurah.com:9300/;" },
+        { name: "REDJO BUNTUNG", url: "https://ssg.streamingmurah.com:9940/stream" },
+        { name: "RODJA", url: "https://live2.radiorodja.com/rodja.mp3" },
+        { name: "RRI PRO 3", url: "https://stream-node0.rri.co.id/streaming/14/9014/kbrn.mp3" },
+        { name: "RRI VOI", url: "https://stream-node0.rri.co.id/streaming/25/9125/voi.mp3" },
+        { name: "RRI KENANGAN HD", url: "https://stream-node2.rri.co.id/streaming/40/9340/memori.mp3"},
+        { name: "RRI JAZZ HD",  url: "https://stream-node2.rri.co.id/streaming/40/9340/jazz.mp3" },
+        { name: "RRI DANGDUT", url: "https://stream-node2.rri.co.id/streaming/40/9340/dangdut.mp3" },
+        { name: "RRI PRO4 ACEH", url: "https://stream-node2.rri.co.id/streaming/14/9214/rribandaacehpro4.mp3" },
+        { name: "RRI PRO1 AMBON", url: "https://stream-node2.rri.co.id/streaming/15/9315/rriambonpro1.mp3" },
+        { name: "RRI PRO2 PONTIANAK", url: "https://stream-node1.rri.co.id/streaming/12/9212/rripontianakpro2.mp3" },
+        { name: "SMART", url: "https://cast2.my-control-panel.com/proxy/radioso3/stream" },
+        { name: "SONORA", url: "https://cast1.my-control-panel.com/proxy/radioso1/stream" },
+        { name: "STAR JOGJA", url: "https://live.solopos.com:8000/stream" },
+        { name: "SUARAGIRI", url: "https://azuracast.suzananet.com:8010/stream/1/" },
+        { name: "SUARA SALATIGA", url: "https://icecast.salatiga.go.id:8443/stream.ogg" },
+        { name: "SUARA SURABAYA", url: "https://c5.siar.us/proxy/ssfm/stream" },
+        { name: "SUZANA HD", url: "https://streaming.suzanafm.com:8000/stream/1/" },
+        { name: "TEBET RADIO", url: "https://stream-ssl.arenastreaming.com:8066/stream" },
+        { name: "TJ RADIO", url: "https://stream-eu-nc.arenastreaming.com:8847/stream" },
+        { name: "TRAX HD", url: "https://stream.radiojar.com/rrqf78p3bnzuv.mp3" },
+        { name: "TRL HD", url: "https://stream.radiojar.com/7csmg90fuqruv" },
+        { name: "URBAN", url: "https://a1.siar.us/listen/urbanradio/stream" },
+        { name: "UTY MEDARI", url: "https://secure.streaming.id/utyfmedari" },
+        { name: "VISI", url: "https://i.klikhost.com/8274/;stream.mp3" },
+        { name: "VOKS", url: "https://a7.alhastream.com:4000/radio" },
+        { name: "VOLARE", url: "https://streaming.volarefm.com/" },
+        { name: "YASIKA", url: "https://i.klikhost.com:9610/stream" },
+   ];
+
+    let currentIndex = 0;
+    let favorites = [];
+    let volumeTimeout;
+    const colors = ["#5a8fb3", "#8fb35a", "#b35a5a", "#b39b5a", "#8e5ab3"];
+    let currentColorIndex = 0;
+
+    const player = document.getElementById("radioPlayer");
+    const source = document.getElementById("audioSource");
+    const screen = document.getElementById("virtualScreen");
+
+    function initStorage() {
+        if (!localStorage.getItem('cookieConsent')) {
+            document.getElementById('cookieBanner').style.display = 'block';
+        } else {
+            loadFavorites();
+        }
+    }
+
+    function acceptCookies() {
+        localStorage.setItem('cookieConsent', 'true');
+        document.getElementById('cookieBanner').style.display = 'none';
+        loadFavorites();
+    }
+
+    function loadFavorites() {
+        const saved = localStorage.getItem('radioFavs');
+        if (saved) {
+            favorites = JSON.parse(saved);
+            buildPlaylist();
+        }
+    }
+
+    function saveFavorites() {
+        localStorage.setItem('radioFavs', JSON.stringify(favorites));
+    }
+
+    function toggleFavorite() {
+        const chName = radioChannels[currentIndex].name;
+        const favIdx = favorites.indexOf(chName);
+        if (favIdx > -1) favorites.splice(favIdx, 1);
+        else favorites.push(chName);
+        saveFavorites();
+        buildPlaylist();
+        updateFavButton();
+    }
+
+    function updateFavButton() {
+        const btn = document.getElementById('favToggleBtn');
+        const chName = radioChannels[currentIndex].name;
+        if (favorites.includes(chName)) {
+            btn.classList.add('is-favourited');
+            btn.innerText = "★ FAV";
+        } else {
+            btn.classList.remove('is-favourited');
+            btn.innerText = "FAV";
+        }
+    }
+
+    function buildPlaylist() {
+        const list = document.getElementById('playlist');
+        list.innerHTML = '';
+        radioChannels.forEach((ch, i) => {
+            const item = document.createElement('button');
+            item.className = 'playlist-item';
+            item.id = `item-${i}`;
+            const isFav = favorites.includes(ch.name);
+            item.innerHTML = `<span>${ch.name} ${isFav ? '<span class="fav-star">★</span>' : ''}</span> 
+                             <small style='opacity:0.4'>${(i+1).toString().padStart(2,'0')}</small>`;
+            item.onclick = () => loadChannel(i);
+            list.appendChild(item);
+        });
+        const activeItem = document.getElementById(`item-${currentIndex}`);
+        if(activeItem) activeItem.classList.add('active');
+    }
+
+    function loadChannel(index) {
+        currentIndex = index;
+        const ch = radioChannels[index];
+        document.querySelectorAll('.playlist-item').forEach(el => el.classList.remove('active'));
+        const activeItem = document.getElementById(`item-${index}`);
+        if(activeItem) activeItem.classList.add('active');
+        
+        document.getElementById('channelName').textContent = "TUNING...";
+        source.src = ch.url;
+        player.load();
+        player.play().then(() => { 
+            document.getElementById('channelName').textContent = ch.name; 
+        })
+        .catch(() => { 
+            document.getElementById('channelName').textContent = "NO SIGNAL"; 
+        });
+        updateFavButton();
+    }
+
+    function nextFav() {
+        if (favorites.length === 0) return;
+        for (let i = 1; i <= radioChannels.length; i++) {
+            let checkIdx = (currentIndex + i) % radioChannels.length;
+            if (favorites.includes(radioChannels[checkIdx].name)) {
+                loadChannel(checkIdx);
+                break;
+            }
+        }
+    }
+
+    function prevFav() {
+        if (favorites.length === 0) return;
+        for (let i = 1; i <= radioChannels.length; i++) {
+            let checkIdx = (currentIndex - i + radioChannels.length) % radioChannels.length;
+            if (favorites.includes(radioChannels[checkIdx].name)) {
+                loadChannel(checkIdx);
+                break;
+            }
+        }
+    }
+
+    function toggleLamp() {
+        currentColorIndex = (currentColorIndex + 1) % colors.length;
+        screen.style.backgroundColor = colors[currentColorIndex];
+        // Overlay juga harus mengikuti warna agar transisinya halus
+        document.getElementById('volumeOverlay').style.backgroundColor = colors[currentColorIndex];
+    }
+
+    function fetchEarthquake() {
+        fetch('https://data.bmkg.go.id/DataMKG/TEWS/autogempa.json')
+        .then(r => r.json()).then(data => {
+            const g = data.Infogempa.gempa;
+            const txt = `[ INFO GEMPA TERKINI: MAGNITUDE ${g.Magnitude} - LOKASI: ${g.Wilayah} - WAKTU: ${g.Jam} ]`;
+            document.getElementById('quakeContent').textContent = txt;
+            document.getElementById('quakeContent2').textContent = txt;
+        });
+    }
+
+    function fetchNews() {
+        fetch('https://rss2json.com/api.json?rss_url=https://news.google.com/rss?hl=id&gl=ID&ceid=ID:id')
+        .then(r => r.json()).then(data => {
+            const news = data.items.map(i => i.title.toUpperCase()).join(' ••• ');
+            document.getElementById('newsContent').textContent = news + ' ••• ';
+            document.getElementById('newsContent2').textContent = news + ' ••• ';
+        });
+    }
+
+    function updateClock() {
+        const now = new Date();
+        document.getElementById('timeDisplay').textContent = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')} WIB`;
+    }
+
+    function adjustVol(v) { 
+        player.volume = Math.max(0, Math.min(1, player.volume + v)); 
+        const overlay = document.getElementById('volumeOverlay');
+        const volFill = document.getElementById('vol-bar-fill');
+        const volPercent = document.getElementById('volPercent');
+        
+        overlay.style.display = 'flex';
+        const percentage = Math.round(player.volume * 100);
+        volFill.style.width = percentage + '%';
+        volPercent.textContent = percentage + '%';
+        
+        clearTimeout(volumeTimeout);
+        volumeTimeout = setTimeout(() => { overlay.style.display = 'none'; }, 1500);
+    }
+
+    function updateBufferBars() {
+        const bars = document.querySelectorAll('.bar');
+        if (player.buffered.length > 0) {
+            const buffer = player.buffered.end(player.buffered.length - 1) - player.currentTime;
+            document.getElementById('statusDisplay').textContent = `BUFFER: ${buffer.toFixed(1)}s`;
+            bars.forEach((b, i) => b.classList.toggle('active', i < Math.ceil(buffer/2)));
+        }
+    }
+
+    initStorage();
+    buildPlaylist();
+    updateClock();
+    fetchNews();
+    fetchEarthquake();
+    setInterval(updateClock, 1000);
+    setInterval(updateBufferBars, 500);
+    setInterval(fetchNews, 300000);
+    setInterval(fetchEarthquake, 60000);
+    setTimeout(() => loadChannel(0), 1000);
+</script>
+</body>
+</html>
